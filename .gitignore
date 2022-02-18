@@ -1,0 +1,9 @@
+data/*
+!data/id.example.json
+!data/sample_images
+!data/sample_test
+
+__pycache__
+
+# Under work
+get_data.py

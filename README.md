@@ -56,9 +56,9 @@ Features that are planned to be implemented:
         {
             "first": "Someone",       // First name of person
             "last":  "Cool",          // Last name of person
-            "house": null,            // House of person (null of N/A)
-            "year":  null,            // Year group of person (null of N/A)
-            "email": null,            // Email of person (null of N/A)
+            "house": null,            // House of person (null if N/A)
+            "year":  null,            // Year group of person (null if N/A)
+            "email": null,            // Email of person (null if N/A)
             "image": "some_image.png" // Filename of the person's image (no need to write out full path or directory)
         }
         ```

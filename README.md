@@ -68,6 +68,7 @@ Features that are planned to be implemented:
     ```shell
     python get_embed.py
     ```
+    This step is crucial as it provides the model with a reference embedding with which it recognises individuals. **Remember to do this every time a new face is added!** It's quick and easy, and has nothing to do with retraining.
 
 5. Run TECLARS on your webcam!
     ```shell

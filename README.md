@@ -54,12 +54,12 @@ Features that are planned to be implemented:
     4. Create a file called `id.json` in the `data` directory. This will store all the information about the people the system will learn to recognise. It is a list of entires, each of which follows this format:
         ```json5
         {
-            "first": "Someone",       # First name of person
-            "last":  "Cool",          # Last name of person
-            "house": null,            # House of person (null of N/A)
-            "year":  null,            # Year group of person (null of N/A)
-            "email": null,            # Email of person (null of N/A)
-            "image": "some_image.png" # Filename of the person's image (no need to write out full path or directory)
+            "first": "Someone",       // First name of person
+            "last":  "Cool",          // Last name of person
+            "house": null,            // House of person (null of N/A)
+            "year":  null,            // Year group of person (null of N/A)
+            "email": null,            // Email of person (null of N/A)
+            "image": "some_image.png" // Filename of the person's image (no need to write out full path or directory)
         }
         ```
         If in doubt, reference the example in `data/id.example.json`. If you used the sample images in the above steps, then you can just copy across the content in `data/id.example.json` into your new `data/id.json`.
@@ -73,7 +73,7 @@ Features that are planned to be implemented:
     ```shell
     python run.py
     ```
-    Press `esc` to exit.
+    Press `esc` to exit. Note that TECLARS will only put a bounding box around a face that it recognises. So you'll have to put in some images of yourself for this to work!
 
     * Additionally, you can also specify a few facial detection and recognition hyperparameters:
 

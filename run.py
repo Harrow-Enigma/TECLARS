@@ -29,11 +29,13 @@ def find_match(output_embedding, all_embeddings, temperature, mode):
         softmax = nn.Softmax(dim=0)
 
         distances = dist_func(output_embedding, all_embeddings)
-        probs = softmax(distances * temperature)
+        # probs = softmax(distances * temperature)
 
-    return arg_func(probs), val_func(probs)
+        # print(distances, probs, arg_func(probs), val_func(probs))
 
-def identify_faces(pil_image, probability_threshold=0.4, temperature=2, mode='cosine'):
+    return arg_func(distances), val_func(distances)
+
+def identify_faces(pil_image, probability_threshold=0.7, temperature=2, mode='cosine'):
     faces = mtcnn(pil_image)
     if faces is not None:
         bounding_boxes, _ = mtcnn.detect(pil_image)
@@ -121,7 +123,7 @@ parser = argparse.ArgumentParser(description='TECLARS: Team Enigma CMC Lab Auto-
 parser.set_defaults(which='video')
 subparsers = parser.add_subparsers(help='TECLARS subcommands (run without any subcommands to run default system)')
 
-parser.add_argument('-x', '--threshold', type=float, default=0.4,
+parser.add_argument('-x', '--threshold', type=float, default=0.7,
                     help='Probability above which a face will be considered recognised')
 parser.add_argument('-t', '--temp', type=float, default=2,
                     help='Temperature: higher temperature creates higher probabilities for a recognised face')

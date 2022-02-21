@@ -58,7 +58,7 @@ def identify_faces(pil_image, probability_threshold=0.8, temperature=2, mode='co
 
 def video():
     print("Starting video capture\n")
-    video_capture = cv2.VideoCapture(args.camera)
+    video_capture = cv2.VideoCapture(args.camera, cv2.CAP_DSHOW)
 
     registered_students = []
     while True:
@@ -93,7 +93,7 @@ def video():
                         print(f"{entity['first']} {entity['last']} registered")
                         registered_students.append(entity)
 
-        cv2.imshow('TECLARS Mainframe', frame)
+        cv2.imshow('TECLARS Main UI', frame)
 
         if cv2.waitKey(1) & 0xFF == 27:
             break
@@ -104,7 +104,7 @@ def video():
 
     time.sleep(2)
 
-    print("\n\nRegistered students:")
+    print("\nRegistered students:")
     print("\n".join([
         f"{e}) {entity['first']} {entity['last']}"
         for e, entity in enumerate(registered_students)
@@ -134,7 +134,30 @@ def check():
     if torch.cuda.is_available():
         for i in range(torch.cuda.device_count()):
             print(f"`cuda{i}`: {torch.cuda.get_device_name(0)}")
+    
+    print("\nChecking camera stream.")
+    print("Enter integer index of camera to check; then press `esc` to proceed to next check.")
 
+    while True:
+        cam = int(input("Enter camera index to check (-1 to exit): "))
+        if cam == -1:
+            break
+
+        else:
+            video_capture = cv2.VideoCapture(cam, cv2.CAP_DSHOW)
+
+            if video_capture is None or not video_capture.isOpened():
+                print(f"No device available at camera {cam}")
+            
+            else:
+                while True:
+                    _, frame = video_capture.read()
+                    cv2.imshow(f'TECLARS Cam Check: Camera {cam}', frame)
+                    if cv2.waitKey(1) & 0xFF == 27:
+                        break
+                
+                video_capture.release()
+                cv2.destroyAllWindows()
 
 parser = argparse.ArgumentParser(description='TECLARS: Team Enigma CMC Lab Auto-Registration System')
 parser.set_defaults(which='video')
@@ -192,4 +215,4 @@ if __name__ == "__main__":
         elif args.which == 'test':
             test()
 
-    print("\n\n[TECLARS terminated]")
+    print("\n[TECLARS terminated]")

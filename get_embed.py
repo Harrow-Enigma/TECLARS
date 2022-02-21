@@ -1,6 +1,7 @@
 from facenet_pytorch import MTCNN, InceptionResnetV1
-import torch
+from tqdm import tqdm
 from PIL import Image
+import torch
 import os
 import json
 
@@ -15,7 +16,7 @@ print("Aligning for faces from data")
 mtcnn = MTCNN(image_size=160, device=device)
 
 aligned = []
-for idx, person in enumerate(ID):
+for idx, person in tqdm(enumerate(ID)):
     fpath = os.path.join('./data/images', person['image'])
 
     with Image.open(fpath) as x:

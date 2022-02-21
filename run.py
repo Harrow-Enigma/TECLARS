@@ -45,13 +45,15 @@ def identify_faces(pil_image, probability_threshold=0.4, temperature=2, mode='co
             if confidence > probability_threshold:
                 entity = ID[idx]
                 matches.append((entity, confidence.item(), box))
+            elif args.show_unrecognised:
+                matches.append((None, None, box))
         
         return matches
     return None
 
 def video():
     print("Starting video capture\n")
-    video_capture = cv2.VideoCapture(0)
+    video_capture = cv2.VideoCapture(args.device)
 
     registered_students = []
     while True:
@@ -68,13 +70,17 @@ def video():
         else:
             for entity, confidence, box in matches:
                 bounds = box.astype(int)
-                text = f"{entity['first']} {entity['last']}: {round(confidence*100, 2)}%"
-                cv2.putText(frame, text, (bounds[0], bounds[1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-                cv2.rectangle(frame, (bounds[0], bounds[1]), (bounds[2], bounds[3]), (0, 0, 255), 2)
 
-                if entity not in registered_students:
-                    print(f"{entity['first']} {entity['last']} registered")
-                    registered_students.append(entity)
+                if args.show_unrecognised and entity is None:
+                    cv2.rectangle(frame, (bounds[0], bounds[1]), (bounds[2], bounds[3]), (0, 0, 255), 2)
+                else:
+                    text = f"{entity['first']} {entity['last']}: {round(confidence*100, 2)}%"
+                    cv2.putText(frame, text, (bounds[0], bounds[1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    cv2.rectangle(frame, (bounds[0], bounds[1]), (bounds[2], bounds[3]), (0, 255, 0), 2)
+
+                    if entity not in registered_students:
+                        print(f"{entity['first']} {entity['last']} registered")
+                        registered_students.append(entity)
 
         cv2.imshow('TECLARS Mainframe', frame)
 
@@ -115,12 +121,16 @@ parser = argparse.ArgumentParser(description='TECLARS: Team Enigma CMC Lab Auto-
 parser.set_defaults(which='video')
 subparsers = parser.add_subparsers(help='TECLARS subcommands (run without any subcommands to run default system)')
 
-parser.add_argument('--threshold', type=float, default=0.4,
+parser.add_argument('-x', '--threshold', type=float, default=0.4,
                     help='Probability above which a face will be considered recognised')
-parser.add_argument('--temp', type=float, default=2,
+parser.add_argument('-t', '--temp', type=float, default=2,
                     help='Temperature: higher temperature creates higher probabilities for a recognised face')
-parser.add_argument('--mode', type=str, choices=['cosine', 'euclidean'], default='cosine',
+parser.add_argument('-d', '--device', type=int, default=0,
+                    help='Index for camera to stream from')
+parser.add_argument('-m', '--mode', type=str, choices=['cosine', 'euclidean'], default='cosine',
                     help='Distance function for evaluating the similarity between face embeddings')
+parser.add_argument('-u', '--show_unrecognised', action="store_true",
+                    help='Remove bounding boxes around unrecognised faces')
 
 test_parser = subparsers.add_parser('test', help='Test system performance on a set of images in a given directory')
 test_parser.set_defaults(which='test')

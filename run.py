@@ -43,6 +43,9 @@ def identify_faces(pil_image, probability_threshold=0.7, temperature=2, mode='co
 
         matches = []
         for y, box in zip(preds, bounding_boxes):
+            if (box[2] - box[0]) < args.ignore:
+                continue
+
             idx, confidence = find_match(y, embeddings, temperature, mode)
             if confidence > probability_threshold:
                 entity = ID[idx]
@@ -68,7 +71,10 @@ def video():
         if matches is None:
             print("> No faces found")
         elif len(matches) == 0:
-            print("> Faces found but none recognised")
+            if args.show_unrecognised:
+                print("> No faces found")
+            else:
+                print("> Faces found but none recognised")
         else:
             for entity, confidence, box in matches:
                 bounds = box.astype(int)
@@ -133,6 +139,8 @@ parser.add_argument('-m', '--mode', type=str, choices=['cosine', 'euclidean'], d
                     help='Distance function for evaluating the similarity between face embeddings')
 parser.add_argument('-u', '--show_unrecognised', action="store_true",
                     help='Remove bounding boxes around unrecognised faces')
+parser.add_argument('-i', '--ignore', type=int, default=13+6,
+                    help='Ignore faraway faces with a width smaller than this value (do not specify to include all faces)')
 
 test_parser = subparsers.add_parser('test', help='Test system performance on a set of images in a given directory')
 test_parser.set_defaults(which='test')

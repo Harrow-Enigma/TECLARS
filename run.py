@@ -35,7 +35,7 @@ def find_match(output_embedding, all_embeddings, temperature, mode):
 
     return arg_func(distances), val_func(distances)
 
-def identify_faces(pil_image, probability_threshold=0.7, temperature=2, mode='cosine'):
+def identify_faces(pil_image, probability_threshold=0.8, temperature=2, mode='cosine'):
     faces = mtcnn(pil_image)
     if faces is not None:
         bounding_boxes, _ = mtcnn.detect(pil_image)
@@ -58,7 +58,7 @@ def identify_faces(pil_image, probability_threshold=0.7, temperature=2, mode='co
 
 def video():
     print("Starting video capture\n")
-    video_capture = cv2.VideoCapture(args.device)
+    video_capture = cv2.VideoCapture(args.camera)
 
     registered_students = []
     while True:
@@ -127,17 +127,27 @@ def test():
                     for entity, confidence, box in matches
                 ]))
 
+def check():
+    print("List of available compute devices [`name`: type]")
+    print("`cpu`: CPU")
+
+    if torch.cuda.is_available():
+        for i in range(torch.cuda.device_count()):
+            print(f"`cuda{i}`: {torch.cuda.get_device_name(0)}")
+
 
 parser = argparse.ArgumentParser(description='TECLARS: Team Enigma CMC Lab Auto-Registration System')
 parser.set_defaults(which='video')
 subparsers = parser.add_subparsers(help='TECLARS subcommands (run without any subcommands to run default system)')
 
-parser.add_argument('-x', '--threshold', type=float, default=0.7,
+parser.add_argument('-x', '--threshold', type=float, default=0.8,
                     help='Probability above which a face will be considered recognised')
 parser.add_argument('-t', '--temp', type=float, default=2,
                     help='Temperature: higher temperature creates higher probabilities for a recognised face')
-parser.add_argument('-d', '--device', type=int, default=0,
+parser.add_argument('-c', '--camera', type=int, default=0,
                     help='Index for camera to stream from')
+parser.add_argument('-d', '--device', type=str, default='auto',
+                    help='Device to compute algorithm on')
 parser.add_argument('-m', '--mode', type=str, choices=['cosine', 'euclidean'], default='cosine',
                     help='Distance function for evaluating the similarity between face embeddings')
 parser.add_argument('-u', '--show_unrecognised', action="store_true",
@@ -150,26 +160,36 @@ test_parser.set_defaults(which='test')
 test_parser.add_argument('--test_path', type=str, default='./data/test',
                          help='Path to directory with test images')
 
+test_parser = subparsers.add_parser('check', help='Checks system for available compute devices and camera streams')
+test_parser.set_defaults(which='check')
+
 args = parser.parse_args()
 
 if __name__ == "__main__":
-    with open('data\id.json', 'r') as f:
-        ID = json.load(f)
+    if args.which == "check":
+        check()
+    
+    else:
+        with open('data\id.json', 'r') as f:
+            ID = json.load(f)
 
-    bundle = torch.load('data/embeddings.pt')
-    embeddings = bundle['embedding']
+        bundle = torch.load('data/embeddings.pt')
+        embeddings = bundle['embedding']
 
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    print('Running on device: {}'.format(device))
+        if args.device == "auto":
+            device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        else:
+            device = torch.device(args.device)
+        print('Running on device: {}'.format(device))
 
-    mtcnn = MTCNN(image_size=160, keep_all=True, device=device)
+        mtcnn = MTCNN(image_size=160, keep_all=True, device=device)
 
-    print("Loading face recognition model")
-    resnet = InceptionResnetV1(pretrained='vggface2').eval().to(device)
+        print("Loading face recognition model")
+        resnet = InceptionResnetV1(pretrained='vggface2').eval().to(device)
 
-    if args.which == 'video':
-        video()
-    elif args.which == 'test':
-        test()
+        if args.which == 'video':
+            video()
+        elif args.which == 'test':
+            test()
 
     print("\n\n[TECLARS terminated]")

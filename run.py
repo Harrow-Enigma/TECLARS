@@ -68,6 +68,9 @@ def video():
 
         matches = identify_faces(im, args.threshold, args.temp, args.mode)
 
+        if args.ignore != 0:
+            cv2.line(frame, (0, 2), (args.ignore, 2), (255, 0, 0), 5)
+
         if matches is None:
             print("> No faces found")
         elif len(matches) == 0:
@@ -139,8 +142,8 @@ parser.add_argument('-m', '--mode', type=str, choices=['cosine', 'euclidean'], d
                     help='Distance function for evaluating the similarity between face embeddings')
 parser.add_argument('-u', '--show_unrecognised', action="store_true",
                     help='Remove bounding boxes around unrecognised faces')
-parser.add_argument('-i', '--ignore', type=int, default=13+6,
-                    help='Ignore faraway faces with a width smaller than this value (do not specify to include all faces)')
+parser.add_argument('-i', '--ignore', type=int, default=100,
+                    help='Ignore faraway faces with a width smaller than this value (set 0 to include all faces)')
 
 test_parser = subparsers.add_parser('test', help='Test system performance on a set of images in a given directory')
 test_parser.set_defaults(which='test')

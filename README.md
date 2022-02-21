@@ -79,21 +79,32 @@ Features that are planned to be implemented:
     * Additionally, you can also specify a few facial detection and recognition hyperparameters:
 
         ```
-        usage: run.py [-h] [--threshold THRESHOLD] [--temp TEMP] [--mode {cosine,euclidean}] {test} ...
+        usage: run.py [-h] [-x THRESHOLD] [-t TEMP] [-c CAMERA] [-d DEVICE] [-m {cosine,euclidean}] [-u] [-i IGNORE] {test,check} ...
 
         TECLARS: Team Enigma CMC Lab Auto-Registration System
 
         positional arguments:
-        {test}                TECLARS subcommands (run without any subcommands to run default system)
+        {test,check}          TECLARS subcommands (run without any subcommands to execute default system)
             test                Test system performance on a set of images in a given directory
+            check               Checks system for available compute devices and camera streams
 
         optional arguments:
         -h, --help            show this help message and exit
-        --threshold THRESHOLD
+        -x THRESHOLD, --threshold THRESHOLD
                                 Probability above which a face will be considered recognised
-        --temp TEMP           Temperature: higher temperature creates higher probabilities for a recognised face
-        --mode {cosine,euclidean}
+        -t TEMP, --temp TEMP  Temperature: higher temperature creates higher probabilities for a recognised face
+        -c CAMERA, --camera CAMERA
+                                Index for camera to stream from
+        -d DEVICE, --device DEVICE
+                                Device to compute algorithm on
+        -m {cosine,euclidean}, --mode {cosine,euclidean}
                                 Distance function for evaluating the similarity between face embeddings
+        -u, --show_unrecognised
+                                Remove bounding boxes around unrecognised faces
+        -i IGNORE, --ignore IGNORE
+                                Ignore faraway faces with a width smaller than this value (set 0 to include all faces)
         ```
 
     * Use `python run.py test` to test TECLARS on your test images.
+    
+    * Use `python run.py check` to find the available options for your computing device (`--device`) and camera stream (`--camera`).

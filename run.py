@@ -161,7 +161,7 @@ def check():
 
 parser = argparse.ArgumentParser(description='TECLARS: Team Enigma CMC Lab Auto-Registration System')
 parser.set_defaults(which='video')
-subparsers = parser.add_subparsers(help='TECLARS subcommands (run without any subcommands to run default system)')
+subparsers = parser.add_subparsers(help='TECLARS subcommands (run without any subcommands to execute default system)')
 
 parser.add_argument('-x', '--threshold', type=float, default=0.8,
                     help='Probability above which a face will be considered recognised')

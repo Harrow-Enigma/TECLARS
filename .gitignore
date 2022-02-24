@@ -1,3 +1,6 @@
+logs.txt
+logs.json
+
 data/*
 !data/id.example.json
 !data/sample_images

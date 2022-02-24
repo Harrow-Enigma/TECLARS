@@ -20,22 +20,40 @@ def cosine_distance(out, refs):
     norms = out.norm() * refs_norm
     return dot_prods / norms
 
-def find_match(output_embedding, all_embeddings, temperature, mode):
+def validate_prediction(idx, confidence, distances):
+    margins = confidence - torch.cat((distances[:idx], distances[idx+1:]))
+    min_margin = torch.min(margins)
+    return confidence > args.threshold and min_margin > args.margin
+
+def find_match(output_embedding, all_embeddings):
     with torch.no_grad():
         dist_func, arg_func, val_func = {
             'euclidean': (euclidean_distance, torch.argmin, torch.min),
             'cosine': (cosine_distance, torch.argmax, torch.max)
-        }[mode]
-        softmax = nn.Softmax(dim=0)
+        }[args.mode]
+        # softmax = nn.Softmax(dim=0)
 
         distances = dist_func(output_embedding, all_embeddings)
         # probs = softmax(distances * temperature)
 
         # print(distances, probs, arg_func(probs), val_func(probs))
 
-    return arg_func(distances), val_func(distances)
+        index, confidence = arg_func(distances), val_func(distances)
+        isvalid = validate_prediction(index, confidence, distances)
 
-def identify_faces(pil_image, probability_threshold=0.8, temperature=2, mode='cosine'):
+        if args.dev and isvalid:
+            devinfo.append({
+                'prediction_index': arg_func(distances).item(),
+                'prediction_confidence': val_func(distances).item(),
+                'distances': distances.numpy().tolist(),
+                'output_embeddings': output_embedding.numpy().tolist()
+            })
+            with open("logs.json", 'w') as f:
+                json.dump(devinfo, f)
+
+    return index, confidence, isvalid
+
+def identify_faces(pil_image):
     faces = mtcnn(pil_image)
     if faces is not None:
         bounding_boxes, _ = mtcnn.detect(pil_image)
@@ -46,8 +64,8 @@ def identify_faces(pil_image, probability_threshold=0.8, temperature=2, mode='co
             if (box[2] - box[0]) < args.ignore:
                 continue
 
-            idx, confidence = find_match(y, embeddings, temperature, mode)
-            if confidence > probability_threshold:
+            idx, confidence, isvalid = find_match(y, embeddings)
+            if isvalid:
                 entity = ID[idx]
                 matches.append((entity, confidence.item(), box))
             elif args.show_unrecognised:
@@ -66,7 +84,7 @@ def video():
 
         im = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        matches = identify_faces(im, args.threshold, args.temp, args.mode)
+        matches = identify_faces(im)
 
         if args.ignore != 0:
             cv2.line(frame, (0, 2), (args.ignore, 2), (255, 0, 0), 5)
@@ -114,7 +132,7 @@ def test():
     print("Beginning testing")
     for filename in os.listdir(args.test_path):
         with Image.open(os.path.join(args.test_path, filename)) as im:
-            matches = identify_faces(im, args.threshold, args.temp, args.mode)
+            matches = identify_faces(im)
 
             if matches is None:
                 print(f"\nNo faces found in {filename}")
@@ -126,6 +144,11 @@ def test():
                     f"{entity['first']} {entity['last']}, confidence: {round(confidence*100, 2)}%, bounds: {box.astype(int).tolist()}"
                     for entity, confidence, box in matches
                 ]))
+
+def show():
+    print("Peple:")
+    for e, i in enumerate(ID):
+        print(f"{e}) {i['first']} {i['last']} ({i['image']})")
 
 def check():
     print("List of available compute devices [`name`: type]")
@@ -163,8 +186,10 @@ parser = argparse.ArgumentParser(description='TECLARS: Team Enigma CMC Lab Auto-
 parser.set_defaults(which='video')
 subparsers = parser.add_subparsers(help='TECLARS subcommands (run without any subcommands to execute default system)')
 
-parser.add_argument('-x', '--threshold', type=float, default=0.8,
+parser.add_argument('-r', '--threshold', type=float, default=0.8,
                     help='Probability above which a face will be considered recognised')
+parser.add_argument('-g', '--margin', type=float, default=0.1,
+                    help='Minimum probability margin above next likely face for the face to be considered recognised')
 parser.add_argument('-t', '--temp', type=float, default=2,
                     help='Temperature: higher temperature creates higher probabilities for a recognised face')
 parser.add_argument('-c', '--camera', type=int, default=0,
@@ -177,6 +202,8 @@ parser.add_argument('-u', '--show_unrecognised', action="store_true",
                     help='Remove bounding boxes around unrecognised faces')
 parser.add_argument('-i', '--ignore', type=int, default=100,
                     help='Ignore faraway faces with a width smaller than this value (set 0 to include all faces)')
+parser.add_argument('-x', '--dev', action='store_true',
+                    help="Enable developer options")
 
 test_parser = subparsers.add_parser('test', help='Test system performance on a set of images in a given directory')
 test_parser.set_defaults(which='test')
@@ -186,33 +213,45 @@ test_parser.add_argument('--test_path', type=str, default='./data/test',
 test_parser = subparsers.add_parser('check', help='Checks system for available compute devices and camera streams')
 test_parser.set_defaults(which='check')
 
+test_parser = subparsers.add_parser('show', help='Shows list of students and their indices in the TECLARS system')
+test_parser.set_defaults(which='show')
+
 args = parser.parse_args()
 
-if __name__ == "__main__":
-    if args.which == "check":
-        check()
-    
-    else:
+try:
+    if __name__ == "__main__":
         with open('data\id.json', 'r') as f:
-            ID = json.load(f)
-
-        bundle = torch.load('data/embeddings.pt')
-        embeddings = bundle['embedding']
-
-        if args.device == "auto":
-            device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+                ID = json.load(f)
+        
+        if args.dev:
+            devinfo = []
+            print("Developer options enabled")
+        
+        if args.which == "check":
+            check()
+        elif args.which == "show":
+            show()
         else:
-            device = torch.device(args.device)
-        print('Running on device: {}'.format(device))
+            bundle = torch.load('data/embeddings.pt')
+            embeddings = bundle['embedding']
 
-        mtcnn = MTCNN(image_size=160, keep_all=True, device=device)
+            if args.device == "auto":
+                device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+            else:
+                device = torch.device(args.device)
+            print('Running on device: {}'.format(device))
 
-        print("Loading face recognition model")
-        resnet = InceptionResnetV1(pretrained='vggface2').eval().to(device)
+            mtcnn = MTCNN(image_size=160, keep_all=True, device=device)
 
-        if args.which == 'video':
-            video()
-        elif args.which == 'test':
-            test()
+            print("Loading face recognition model")
+            resnet = InceptionResnetV1(pretrained='vggface2').eval().to(device)
 
-    print("\n[TECLARS terminated]")
+            if args.which == 'video':
+                video()
+            elif args.which == 'test':
+                test()
+
+        print("\n[TECLARS terminated]")
+
+except KeyboardInterrupt:
+    print("\n[TECLARS terminated by user]")

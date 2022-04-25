@@ -1,4 +1,3 @@
-from genericpath import exists
 from facenet_pytorch import MTCNN, InceptionResnetV1
 import torch
 import torch.nn as nn
@@ -85,8 +84,7 @@ def video():
         sess_id = "sheets-bill-" + args.session_id
     
     os.makedirs(args.output_dir, exist_ok=True)
-    report_path = os.path.join(args.output_dir, f"{sess_id}.txt")
-    counter = IDCounter(args.number, ID, sess_id, report_path)
+    counter = IDCounter(args.number, ID, sess_id, args.output_dir)
 
     print("Starting video capture\n")
     video_capture = cv2.VideoCapture(args.camera, cv2.CAP_DSHOW)

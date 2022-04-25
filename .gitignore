@@ -6,6 +6,8 @@ data/*
 !data/sample_images
 !data/sample_test
 
+reports/
+
 __pycache__
 
 # Under work

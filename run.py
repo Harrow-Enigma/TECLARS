@@ -1,3 +1,4 @@
+from genericpath import exists
 from facenet_pytorch import MTCNN, InceptionResnetV1
 import torch
 import torch.nn as nn
@@ -8,6 +9,9 @@ import os
 import json
 import time
 import argparse
+
+from counter import IDCounter
+
 
 def euclidean_distance(out, refs):
     return (out - refs).norm(dim=1)
@@ -75,6 +79,15 @@ def identify_faces(pil_image):
     return None
 
 def video():
+    if args.session_id is None:
+        sess_id = "sheets-bill-" + input("Enter session ID: sheets-bill-")
+    else:
+        sess_id = "sheets-bill-" + args.session_id
+    
+    os.makedirs(args.output_dir, exist_ok=True)
+    report_path = os.path.join(args.output_dir, f"{sess_id}.txt")
+    counter = IDCounter(args.number, ID, sess_id, report_path)
+
     print("Starting video capture\n")
     video_capture = cv2.VideoCapture(args.camera, cv2.CAP_DSHOW)
 
@@ -103,13 +116,17 @@ def video():
                 if args.show_unrecognised and entity is None:
                     cv2.rectangle(frame, (bounds[0], bounds[1]), (bounds[2], bounds[3]), (0, 0, 255), 2)
                 else:
-                    text = f"{entity['first']} {entity['last']}: {round(confidence*100, 2)}%"
-                    cv2.putText(frame, text, (bounds[0], bounds[1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                    cv2.rectangle(frame, (bounds[0], bounds[1]), (bounds[2], bounds[3]), (0, 255, 0), 2)
-
-                    if entity not in registered_students:
-                        print(f"{entity['first']} {entity['last']} registered")
-                        registered_students.append(entity)
+                    name = f"{entity['first']} {entity['last']}"
+                    if counter.update(name):
+                        if entity not in registered_students:
+                            print(f"{entity['first']} {entity['last']} registered")
+                            registered_students.append(entity)
+                        color = (0, 255, 0)
+                    else:
+                        color = (0, 210, 255)
+                    text = f"{name}: {round(confidence*100, 2)}%"
+                    cv2.putText(frame, text, (bounds[0], bounds[1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                    cv2.rectangle(frame, (bounds[0], bounds[1]), (bounds[2], bounds[3]), color, 2)
 
         cv2.imshow('TECLARS Main UI', frame)
 
@@ -127,6 +144,8 @@ def video():
         f"{e}) {entity['first']} {entity['last']}"
         for e, entity in enumerate(registered_students)
     ]))
+
+    counter.showReport()
 
 def test():
     print("Beginning testing")
@@ -188,6 +207,8 @@ subparsers = parser.add_subparsers(help='TECLARS subcommands (run without any su
 
 parser.add_argument('-r', '--threshold', type=float, default=0.8,
                     help='Probability above which a face will be considered recognised')
+parser.add_argument('-n', '--number', type=int, default=5,
+                    help='Minimum number of frames above which a face will be considered recognised')
 parser.add_argument('-g', '--margin', type=float, default=0.1,
                     help='Minimum probability margin above next likely face for the face to be considered recognised')
 parser.add_argument('-t', '--temp', type=float, default=2,
@@ -198,10 +219,14 @@ parser.add_argument('-d', '--device', type=str, default='auto',
                     help='Device to compute algorithm on')
 parser.add_argument('-m', '--mode', type=str, choices=['cosine', 'euclidean'], default='cosine',
                     help='Distance function for evaluating the similarity between face embeddings')
-parser.add_argument('-u', '--show_unrecognised', action="store_true",
+parser.add_argument('-u', '--show_unrecognised', action="store_false",
                     help='Remove bounding boxes around unrecognised faces')
 parser.add_argument('-i', '--ignore', type=int, default=100,
                     help='Ignore faraway faces with a width smaller than this value (set 0 to include all faces)')
+parser.add_argument('-s', '--session_id', type=str, default=None,
+                    help="Session ID")
+parser.add_argument('-o', '--output_dir', type=str, default="./reports",
+                    help="Directory to output reports")
 parser.add_argument('-x', '--dev', action='store_true',
                     help="Enable developer options")
 

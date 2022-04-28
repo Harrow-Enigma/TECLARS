@@ -122,6 +122,8 @@ def video():
                         color = (0, 255, 0)
                     else:
                         color = (0, 210, 255)
+                    if entity['nick'] is not None:
+                        name = entity['nick']
                     text = f"{name}: {round(confidence*100, 2)}%"
                     cv2.putText(frame, text, (bounds[0], bounds[1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
                     cv2.rectangle(frame, (bounds[0], bounds[1]), (bounds[2], bounds[3]), color, 2)

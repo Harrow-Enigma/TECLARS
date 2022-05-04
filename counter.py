@@ -10,20 +10,14 @@ class IDCounter(object):
     self.path = os.path.join(output_dir, f"{sessionId}.txt")
     self.ckpt = os.path.join(output_dir, f"backup-{sessionId}.pt")
     
-    with open(self.path, 'wb') as f:
-      f.write(f"Attendance report for {sessionId}\n\nRegistered:\n".encode("utf-8"))
-    
     self.names = [f"{entity['first']} {entity['last']}" for entity in ID]
+
+    with open(self.path, 'wb') as f:
+      f.write(f"Attendance report for {self.sessionId}\n\n".encode("utf-8"))
 
     if os.path.exists(self.ckpt): 
       bundle = torch.load(self.ckpt)
       self.counters, self.attendance = bundle['counters'], bundle['attendance']
-
-      append = ""
-      for person in self.attendance:
-        if self.attendance[person] == True:
-          append += self.registered_string(person)
-      self.write(append)
     
     else:
       self.counters = {i:0 for i in self.names}
@@ -49,15 +43,19 @@ class IDCounter(object):
       if self.counters[id] >= self.count_thresh:
         if self.attendance[id] == False:
           self.attendance[id] = True
-          self.write(self.registered_string(id))
           torch.save({'counters': self.counters, 'attendance': self.attendance}, self.ckpt)
         return True
     else:
       self.counters[id] = 1
     return False
 
+  def showReport(self):    
+    append = "Registered:\n"
+    for person in self.attendance:
+      if self.attendance[person] == True:
+        append += self.registered_string(person)
+    self.write(append)
 
-  def showReport(self):
     append = f"\nNot registered:\n"
     for person in self.attendance:
       if self.attendance[person] == False:

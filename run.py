@@ -132,12 +132,26 @@ def video():
 
         if cv2.waitKey(1) & 0xFF == 27:
             break
+        
+        if cv2.getWindowProperty('TECLARS Main UI', cv2.WND_PROP_VISIBLE) < 1:
+            break
     
-    print()
     video_capture.release()
     cv2.destroyAllWindows()
 
-    time.sleep(2)
+    print()
+    cont = input("Do you want to terminate session [y/n]: ").strip().lower()
+    
+    if cont != "y":
+        raise KeyboardInterrupt
+
+    print("* Note this will delete all current backup files and overwrite any existing reports with same ID. Choose `y` only if no new students will be registered; otherwise pick `n`.\n")
+    cont = input("Are you sure you want to terminate session [y/n]: ").strip().lower()
+    
+    if cont != "y":
+        raise KeyboardInterrupt
+
+    time.sleep(1)
 
     print("\nRegistered students:")
     print("\n".join([
@@ -279,4 +293,4 @@ try:
         print("\n[TECLARS terminated]")
 
 except KeyboardInterrupt:
-    print("\n[TECLARS terminated by user]")
+    print("\n[TECLARS session temporarily terminated by user]")

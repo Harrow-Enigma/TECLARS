@@ -1,0 +1,6 @@
+torch
+torchvision
+torchaudio
+facenet-pytorch
+opencv-python
+tqdm

@@ -87,13 +87,17 @@ def video():
     counter = IDCounter(args.number, ID, sess_id, args.output_dir)
 
     print("Starting video capture\n")
-    video_capture = cv2.VideoCapture(args.camera, cv2.CAP_DSHOW)
+    video_capture = cv2.VideoCapture(args.camera, cv2.CAP_V4L2)
+    video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 224)
+    video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 224)
+    video_capture.set(cv2.CAP_PROP_FPS, 1)
+    video_capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
 
     registered_students = []
     while True:
-        _, frame = video_capture.read()
+        _, frame = video_capture.read(cv2.CAP_PROP_FRAME_COUNT)
 
-        im = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        im = frame[:, :, [2, 1, 0]]
 
         matches = identify_faces(im)
 
@@ -173,7 +177,6 @@ def test():
                 print(f"\nFaces found but none recognised in {filename}")
             else:
                 print(f'\nFaces in {filename}')
-                print(filename, entity)
                 print('\n'.join([
                     f"{entity['first']} {entity['last']}, confidence: {round(confidence*100, 2)}%, bounds: {box.astype(int).tolist()}"
                     for entity, confidence, box in matches
@@ -236,7 +239,7 @@ parser.add_argument('-m', '--mode', type=str, choices=['cosine', 'euclidean'], d
                     help='Distance function for evaluating the similarity between face embeddings')
 parser.add_argument('-u', '--show_unrecognised', action="store_false",
                     help='Remove bounding boxes around unrecognised faces')
-parser.add_argument('-i', '--ignore', type=int, default=100,
+parser.add_argument('-i', '--ignore', type=int, default=50,
                     help='Ignore faraway faces with a width smaller than this value (set 0 to include all faces)')
 parser.add_argument('-s', '--session_id', type=str, default=None,
                     help="Session ID")

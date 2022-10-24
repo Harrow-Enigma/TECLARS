@@ -71,7 +71,7 @@ def identify_faces(pil_image):
             if isvalid:
                 entity = ID[idx]
                 matches.append((entity, confidence.item(), box))
-            elif args.show_unrecognised:
+            elif args.show_unrecognised and args.which != 'test':
                 matches.append((None, None, box))
         
         return matches
@@ -173,6 +173,7 @@ def test():
                 print(f"\nFaces found but none recognised in {filename}")
             else:
                 print(f'\nFaces in {filename}')
+                print(filename, entity)
                 print('\n'.join([
                     f"{entity['first']} {entity['last']}, confidence: {round(confidence*100, 2)}%, bounds: {box.astype(int).tolist()}"
                     for entity, confidence, box in matches
@@ -259,7 +260,7 @@ args = parser.parse_args()
 
 try:
     if __name__ == "__main__":
-        with open('data\id.json', 'r') as f:
+        with open('data/id.json', 'r') as f:
                 ID = json.load(f)
         
         if args.dev:

@@ -1,3 +1,5 @@
+# From https://gist.github.com/yrevar/942d3a0ac09ec9e5eb3a
+
 IMAGENET_CLASSES = {
     0: 'tench, Tinca tinca',
     1: 'goldfish, Carassius auratus',

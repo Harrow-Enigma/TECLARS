@@ -1,5 +1,6 @@
 logs.txt
 logs.json
+chk.txt
 
 data/*
 !data/id.example.json

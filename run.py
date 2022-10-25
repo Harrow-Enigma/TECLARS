@@ -8,8 +8,11 @@ import os
 import json
 import time
 import argparse
+from datetime import datetime
 
 from counter import IDCounter
+from interface import Interface
+from localparams import LOCALPARAMS
 
 
 def euclidean_distance(out, refs):
@@ -79,19 +82,21 @@ def identify_faces(pil_image):
 
 def video():
     if args.session_id is None:
-        sess_id = "sheets-bill-" + input("Enter session ID: sheets-bill-")
+        sess_id = datetime.strftime(datetime.now(), '%Y-%m-%d_%a')
     else:
-        sess_id = "sheets-bill-" + args.session_id
+        sess_id = args.session_id
     
-    os.makedirs(args.output_dir, exist_ok=True)
     counter = IDCounter(args.number, ID, sess_id, args.output_dir)
+
+    print("Starting wio interface\n")
+    itf = Interface(args.port)
 
     print("Starting video capture\n")
     video_capture = cv2.VideoCapture(args.camera, cv2.CAP_V4L2)
     video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 224)
     video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 224)
-    video_capture.set(cv2.CAP_PROP_FPS, 1)
-    video_capture.set(cv2.CAP_PROP_BUFFERSIZE, 2)
+    video_capture.set(cv2.CAP_PROP_FPS, 2)
+    video_capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
     registered_students = []
     while True:
@@ -104,35 +109,54 @@ def video():
         if args.ignore != 0:
             cv2.line(frame, (0, 2), (args.ignore, 2), (255, 0, 0), 5)
 
+        summary_text = []
+        summary_color = 0
+
         if matches is None:
-            print("> No faces found")
+            summary_color = 3
+            summary_text.append("No face found")
+        
         elif len(matches) == 0:
+            summary_color = 3
             if args.show_unrecognised:
-                print("> No faces found")
+                summary_text.append("No face found")
             else:
-                print("> Faces found but none recognised")
+                summary_text.append("Face(s) unrecognised")
+        
         else:
             for entity, confidence, box in matches:
                 bounds = box.astype(int)
 
                 if args.show_unrecognised and entity is None:
                     cv2.rectangle(frame, (bounds[0], bounds[1]), (bounds[2], bounds[3]), (0, 0, 255), 2)
+                    summary_text.append("Face(s) unrecognised")
+                    summary_color = 3
+                
                 else:
                     name = f"{entity['first']} {entity['last']}"
+                    nick = entity['nick'] if entity['nick'] is not None else entity['first']
+
                     if counter.update(name):
                         if entity not in registered_students:
-                            print(f"{entity['first']} {entity['last']} registered")
                             registered_students.append(entity)
+                        if summary_color <= 1: summary_color = 1
                         color = (0, 255, 0)
                     else:
+                        if summary_color <= 2: summary_color = 2
                         color = (0, 210, 255)
-                    if entity['nick'] is not None:
-                        name = entity['nick']
-                    text = f"{name}: {round(confidence*100, 2)}%"
+                    
+                    text = f"{nick} [{round(confidence*100, 2)}%]"
+                    summary_text.append(text)
                     cv2.putText(frame, text, (bounds[0], bounds[1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
                     cv2.rectangle(frame, (bounds[0], bounds[1]), (bounds[2], bounds[3]), color, 2)
 
         cv2.imshow('TECLARS Main UI', frame)
+
+        summary_text = ', '.join(summary_text)
+        print(summary_text)
+        button_pressed = itf.exchange(summary_text, summary_color)
+        if button_pressed:
+            counter.save_unk_img(im)
 
         if cv2.waitKey(1) & 0xFF == 27:
             break
@@ -144,16 +168,6 @@ def video():
     cv2.destroyAllWindows()
 
     print()
-    cont = input("Do you want to terminate session [y/n]: ").strip().lower()
-    
-    if cont != "y":
-        raise KeyboardInterrupt
-
-    print("* Note this will delete all current backup files and overwrite any existing reports with same ID. Choose `y` only if no new students will be registered; otherwise pick `n`.\n")
-    cont = input("Are you sure you want to terminate session [y/n]: ").strip().lower()
-    
-    if cont != "y":
-        raise KeyboardInterrupt
 
     time.sleep(1)
 
@@ -162,8 +176,6 @@ def video():
         f"{e}) {entity['first']} {entity['last']}"
         for e, entity in enumerate(registered_students)
     ]))
-
-    counter.showReport()
 
 def test():
     print("Beginning testing")
@@ -204,7 +216,10 @@ def check():
             break
 
         else:
-            video_capture = cv2.VideoCapture(cam, cv2.CAP_DSHOW)
+            video_capture = cv2.VideoCapture(cam, cv2.CAP_V4L2)
+            video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 224)
+            video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 224)
+            video_capture.set(cv2.CAP_PROP_FPS, 1)
 
             if video_capture is None or not video_capture.isOpened():
                 print(f"No device available at camera {cam}")
@@ -225,7 +240,7 @@ subparsers = parser.add_subparsers(help='TECLARS subcommands (run without any su
 
 parser.add_argument('-r', '--threshold', type=float, default=0.8,
                     help='Probability above which a face will be considered recognised')
-parser.add_argument('-n', '--number', type=int, default=5,
+parser.add_argument('-n', '--number', type=int, default=3,
                     help='Minimum number of frames above which a face will be considered recognised')
 parser.add_argument('-g', '--margin', type=float, default=0.1,
                     help='Minimum probability margin above next likely face for the face to be considered recognised')
@@ -239,12 +254,16 @@ parser.add_argument('-m', '--mode', type=str, choices=['cosine', 'euclidean'], d
                     help='Distance function for evaluating the similarity between face embeddings')
 parser.add_argument('-u', '--show_unrecognised', action="store_false",
                     help='Remove bounding boxes around unrecognised faces')
-parser.add_argument('-i', '--ignore', type=int, default=50,
+parser.add_argument('-i', '--ignore', type=int, default=70,
                     help='Ignore faraway faces with a width smaller than this value (set 0 to include all faces)')
 parser.add_argument('-s', '--session_id', type=str, default=None,
                     help="Session ID")
-parser.add_argument('-o', '--output_dir', type=str, default="./reports",
+parser.add_argument('-l', '--load_dir', type=str, default=LOCALPARAMS['LOADDIR'],
+                    help="Directory to `id.json` and `embeddings.pt`")                    
+parser.add_argument('-o', '--output_dir', type=str, default=LOCALPARAMS['OUTDIR'],
                     help="Directory to output reports")
+parser.add_argument('-p', '--port', type=str, default=LOCALPARAMS['PORT'],
+                    help="Port to connect to Wio terminal")
 parser.add_argument('-x', '--dev', action='store_true',
                     help="Enable developer options")
 
@@ -263,8 +282,8 @@ args = parser.parse_args()
 
 try:
     if __name__ == "__main__":
-        with open('data/id.json', 'r') as f:
-                ID = json.load(f)
+        with open(os.path.join(args.load_dir, 'id.json'), 'r') as f:
+            ID = json.load(f)
         
         if args.dev:
             devinfo = []
@@ -275,7 +294,7 @@ try:
         elif args.which == "show":
             show()
         else:
-            bundle = torch.load('data/embeddings.pt')
+            bundle = torch.load(os.path.join(args.load_dir, 'embeddings.pt'))
             embeddings = bundle['embedding']
 
             if args.device == "auto":

@@ -130,9 +130,11 @@ def video():
                 bounds = box.astype(int)
 
                 if args.show_unrecognised and entity is None:
-                    cv2.rectangle(frame, (bounds[0], bounds[1]), (bounds[2], bounds[3]), (0, 0, 255), 2)
                     summary_text.append("Face(s) unrecognised")
                     summary_color = 3
+                    
+                    if not args.blind:
+                        cv2.rectangle(frame, (bounds[0], bounds[1]), (bounds[2], bounds[3]), (0, 0, 255), 2)
                 
                 else:
                     name = f"{entity['first']} {entity['last']}"
@@ -149,10 +151,10 @@ def video():
                     
                     text = f"{nick} [{round(confidence*100, 2)}%]"
                     summary_text.append(text)
-                    cv2.putText(frame, text, (bounds[0], bounds[1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
-                    cv2.rectangle(frame, (bounds[0], bounds[1]), (bounds[2], bounds[3]), color, 2)
 
-        cv2.imshow('TECLARS Main UI', frame)
+                    if not args.blind:
+                        cv2.putText(frame, text, (bounds[0], bounds[1]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                        cv2.rectangle(frame, (bounds[0], bounds[1]), (bounds[2], bounds[3]), color, 2)
 
         summary_text = ', '.join(summary_text)
         print(summary_text)
@@ -160,11 +162,14 @@ def video():
         if button_pressed:
             counter.save_unk_img(im)
 
-        if cv2.waitKey(1) & 0xFF == 27:
-            break
-        
-        if cv2.getWindowProperty('TECLARS Main UI', cv2.WND_PROP_VISIBLE) < 1:
-            break
+        if not args.blind:
+            cv2.imshow('TECLARS Main UI', frame)
+
+            if cv2.waitKey(1) & 0xFF == 27:
+                break
+            
+            if cv2.getWindowProperty('TECLARS Main UI', cv2.WND_PROP_VISIBLE) < 1:
+                break
     
     video_capture.release()
     cv2.destroyAllWindows()
@@ -266,6 +271,8 @@ parser.add_argument('-o', '--output_dir', type=str, default=LOCALPARAMS['OUTDIR'
                     help="Directory to output reports")
 parser.add_argument('-p', '--port', type=str, default=LOCALPARAMS['PORT'],
                     help="Port to connect to Wio terminal")
+parser.add_argument('-b', '--blind', action='store_true',
+                    help="Do not display video")
 parser.add_argument('-x', '--dev', action='store_true',
                     help="Enable developer options")
 

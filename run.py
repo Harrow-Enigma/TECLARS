@@ -12,6 +12,7 @@ from datetime import datetime
 
 from counter import IDCounter
 from interface import Interface
+from vidcap import BufferlessVideoCapture
 from localparams import LOCALPARAMS
 
 
@@ -92,15 +93,16 @@ def video():
     itf = Interface(args.port)
 
     print("Starting video capture\n")
-    video_capture = cv2.VideoCapture(args.camera, cv2.CAP_V4L2)
-    video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 224)
-    video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 224)
-    video_capture.set(cv2.CAP_PROP_FPS, 2)
-    video_capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+    cv2_capture = cv2.VideoCapture(args.camera, cv2.CAP_V4L2)
+    cv2_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 224)
+    cv2_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 224)
+    cv2_capture.set(cv2.CAP_PROP_FPS, 2)
+    cv2_capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+    video_capture = BufferlessVideoCapture(cv2_capture)
 
     registered_students = []
     while True:
-        _, frame = video_capture.read(cv2.CAP_PROP_FRAME_COUNT)
+        frame = video_capture.read()
 
         im = frame[:, :, [2, 1, 0]]
 
@@ -219,7 +221,7 @@ def check():
             video_capture = cv2.VideoCapture(cam, cv2.CAP_V4L2)
             video_capture.set(cv2.CAP_PROP_FRAME_WIDTH, 224)
             video_capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 224)
-            video_capture.set(cv2.CAP_PROP_FPS, 1)
+            video_capture.set(cv2.CAP_PROP_FPS, 2)
 
             if video_capture is None or not video_capture.isOpened():
                 print(f"No device available at camera {cam}")

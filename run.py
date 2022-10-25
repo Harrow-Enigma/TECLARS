@@ -15,6 +15,10 @@ from interface import Interface
 from vidcap import BufferlessVideoCapture
 from localparams import LOCALPARAMS
 
+def ckpt(sth):
+    if args.dev:
+        with open('chk.txt', 'w') as f:
+            f.write(sth)
 
 def euclidean_distance(out, refs):
     return (out - refs).norm(dim=1)
@@ -82,6 +86,8 @@ def identify_faces(pil_image):
     return None
 
 def video():
+    ckpt('video')
+
     if args.session_id is None:
         sess_id = datetime.strftime(datetime.now(), '%Y-%m-%d_%a')
     else:
@@ -100,13 +106,19 @@ def video():
     cv2_capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
     video_capture = BufferlessVideoCapture(cv2_capture)
 
+    ckpt('video capture success')
+
     registered_students = []
     while True:
         frame = video_capture.read()
 
+        ckpt('capture read success')
+
         im = frame[:, :, [2, 1, 0]]
 
         matches = identify_faces(im)
+
+        ckpt('id faces success')
 
         if args.ignore != 0:
             cv2.line(frame, (0, 2), (args.ignore, 2), (255, 0, 0), 5)
@@ -132,7 +144,7 @@ def video():
                 if args.show_unrecognised and entity is None:
                     summary_text.append("Face(s) unrecognised")
                     summary_color = 3
-                    
+
                     if not args.blind:
                         cv2.rectangle(frame, (bounds[0], bounds[1]), (bounds[2], bounds[3]), (0, 0, 255), 2)
                 
@@ -291,6 +303,11 @@ args = parser.parse_args()
 
 try:
     if __name__ == "__main__":
+        ckpt('sleep')
+        time.sleep(5)
+
+        ckpt('start')
+
         with open(os.path.join(args.load_dir, 'id.json'), 'r') as f:
             ID = json.load(f)
         
@@ -316,6 +333,8 @@ try:
 
             print("Loading face recognition model")
             resnet = InceptionResnetV1(pretrained='vggface2').eval().to(device)
+
+            ckpt('models loaded')
 
             if args.which == 'video':
                 video()

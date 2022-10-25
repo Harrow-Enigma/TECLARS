@@ -8,9 +8,12 @@ data/*
 
 reports/
 
+test.png
+
+localparams.py
+
 __pycache__
 
 # Under work
 get_data.py
 todo.md
-test.png

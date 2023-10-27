@@ -1,7 +1,7 @@
 # TECLARS
 *Team Enigma CMC Lab Auto-Registration System*
 
-A simple-to-use end-to-end facial recognition registraion system powered by [`facenet-pytorch`](https://github.com/timesler/facenet-pytorch), developed as a proof-of-concept for real-time automated registration in lessons and boarding houses at Harrow School. Licensed under the Commons Clause license, on top of the GNU GENERAL PUBLIC LICENSE Version 3.
+A simple-to-use end-to-end facial recognition registration system powered by [`facenet-pytorch`](https://github.com/timesler/facenet-pytorch), developed as a proof-of-concept for real-time automated registration in lessons and boarding houses at Harrow School. Licensed under the Commons Clause license, on top of the GNU GENERAL PUBLIC LICENSE Version 3.
 
 ## Table of Contents
 
@@ -15,15 +15,15 @@ All key facial recognition features have been implemented:
 
 * one-shot classification by comparing embeddings of faces, so new faces can be easily added and removed without any re-training
 
-* concurrent detection and recogntion of multiple faces in the same frame
+* concurrent detection and recognition of multiple faces in the same frame
 
 * reasonable framerate even on CPUs (although supports GPU too, via PyTorch)
 
-* automatically filters out faces with low-confidence, reducing the number of miss-recognitions
+* automatically filters out faces with low confidence, reducing the number of miss-recognitions
 
-* real-time facial detection and recognition on webcam stream, visualised with annoated bounding boxes via OpenCV2
+* real-time facial detection and recognition on webcam stream, visualised with annotated bounding boxes via OpenCV2
 
-* supports both euclidean distance and cosine angle as measures of embedding similarities (cosine works better in practice)
+* supports both Euclidean distance and cosine angle as measures of embedding similarities (cosine works better in practice)
 
 Features that are planned to be implemented:
 
@@ -51,7 +51,7 @@ Features that are planned to be implemented:
 
     3. Place any image you would like to test the system on in `data/test`. Again, all images must be in either `JPG`, `JPEG` or `PNG` format. You can also copy the images in `data/sample_test` for a quick start.
 
-    4. Create a file called `id.json` in the `data` directory. This will store all the information about the people the system will learn to recognise. It is a list of entires, each of which follows this format:
+    4. Create a file called `id.json` in the `data` directory. This will store all the information about the people the system will learn to recognise. It is a list of entries, each of which follows this format:
         ```json5
         {
             "first": "Someone",       // First name of person

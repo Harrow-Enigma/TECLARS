@@ -1,7 +1,9 @@
 # TECLARS
 *Team Enigma CMC Lab Auto-Registration System*
 
-A simple-to-use end-to-end facial recognition registration system powered by [`facenet-pytorch`](https://github.com/timesler/facenet-pytorch), developed as a proof-of-concept for real-time automated registration in lessons and boarding houses at Harrow School. Licensed under the Commons Clause license, on top of the GNU GENERAL PUBLIC LICENSE Version 3.
+A simple-to-use end-to-end facial recognition registration system powered by [`facenet-pytorch`](https://github.com/timesler/facenet-pytorch), developed as a proof-of-concept for real-time automated registration in lessons and boarding houses at Harrow School.
+
+Licensed under the Commons Clause license, on top of the GNU GENERAL PUBLIC LICENSE Version 3.
 
 ## Table of Contents
 
